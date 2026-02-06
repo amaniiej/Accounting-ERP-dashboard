@@ -1,17 +1,84 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", "Geist Sans", ui-sans-serif, system-ui;
+  font-family: var(--font-sans);
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0f172a;
-  color: white;
-  min-height: 100vh;
-}
+/* Print Styles - Hide sidebar, header and other non-content elements */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all layout elements */
+  .no-print,
+  header,
+  .sidebar,
+  [class*="Sidebar"],
+  [class*="Header"],
+  nav,
+  .navigation,
+  .toolbar:not(.print-toolbar) {
+    display: none !important;
+  }
+
+  /* Make content take full A4 page */
+  .print-content,
+  main,
+  .content-area,
+  [class*="content"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* A4 Page dimensions */
+  .a4-page,
+  [class*="a4"],
+  .print-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Remove backgrounds for clean print */
+  .bg-white\/,
+  .bg-slate-,
+  .bg-gray-,
+  [class*="bg-"] {
+    background: white !important;
+    background-color: white !important;
+  }
+
+  /* Ensure text is black */
+  * {
+    color: black !important;
+    text-shadow: none !important;
+  }
+
+  /* Remove shadows and borders */
+  .shadow,
+  .shadow-xl,
+  .shadow-lg,
+  [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  .border,
+  [class*="border-"] {
+    border-color: #ddd !important;
+  }
 }

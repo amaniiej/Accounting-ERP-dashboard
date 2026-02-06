@@ -6,8 +6,9 @@ export interface Transaction {
   id: string;
   date: Date;
   source: 'Telebirr' | 'CBE' | 'Cash';
-  motif: string; 
-  amount: number; // Positive = Income, Negative = Expense
+  item_name?: string; // The specific product/service (optional)
+  motif: string;     // The "Reason" or extra detail
+  amount: number;
   type: 'INCOME' | 'EXPENSE';
   receipt_hash?: string;
   has_file: boolean;
@@ -15,12 +16,16 @@ export interface Transaction {
 }
 
 export interface CompanyProfile {
-  initial: string;
+  initial?: any;
   name: string;
   address: string;
-  tag: string;
+  tag?: any;
   tin: string;
-  phone: string;
+  phone?: string;
+  logo?: string;
+  fy?: string;
+  q?: string;
+  env?: string;
 }
 
 export interface DocFile {
@@ -28,16 +33,4 @@ export interface DocFile {
   url: string;
   type: string;
   date: string;
-}
-
-export interface Transaction {
-  id: string;
-  date: Date;
-  source: 'Telebirr' | 'CBE' | 'Cash';
-  item_name: string; // The specific product/service
-  motif: string;     // The "Reason" or extra detail
-  amount: number;
-  type: 'INCOME' | 'EXPENSE';
-  receipt_hash?: string;
-  has_file: boolean;
 }

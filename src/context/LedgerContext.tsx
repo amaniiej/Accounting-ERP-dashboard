@@ -1,11 +1,12 @@
 // src/context/LedgerContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-// IMPORT all the types we defined earlier
-import { Transaction, Lang, CompanyProfile, DocFile } from '../types';
+import { Transaction, Lang, CompanyProfile, DocFile } from '../types/index';
 
 interface LedgerContextType {
   transactions: Transaction[];
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+  addTransaction: (transaction: Transaction) => void;
+  deleteTransaction: (id: string) => void;
   language: Lang;
   setLanguage: (lang: Lang) => void;
   profile: CompanyProfile;
@@ -53,7 +54,9 @@ export const LedgerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   return (
     <LedgerContext.Provider value={{ 
       transactions, 
-      setTransactions, 
+      setTransactions,
+      addTransaction: (transaction: Transaction) => setTransactions(prev => [transaction, ...prev]),
+      deleteTransaction: (id: string) => setTransactions(prev => prev.filter(t => t.id !== id)),
       language, 
       setLanguage,
       profile,

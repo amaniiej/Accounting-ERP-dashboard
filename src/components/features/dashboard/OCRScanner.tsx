@@ -48,7 +48,7 @@ const OCRScanner: React.FC<OCRScannerProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center" style={{ fontFamily: "'Satoshi', sans-serif" }}>
       <div className="bg-white p-10 rounded-[32px] w-[600px] shadow-2xl flex flex-col gap-6">
         <div className="flex justify-between items-center border-b pb-4">
           <h2 className="flex items-center gap-3 text-2xl font-bold text-blue-900">

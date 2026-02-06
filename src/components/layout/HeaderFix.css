@@ -1,0 +1,11 @@
+.header-container {
+  display: flex !important;
+  width: 100% !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+}
+.search-input-fix {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
