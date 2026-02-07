@@ -1,62 +1,39 @@
-// src/components/layout/Header.tsx
 import React from 'react';
-import { Menu as MenuIcon, Search } from 'lucide-react';
-import { useLedger } from '../../context/LedgerContext';
+import { useUIStore } from '../../store/uiStore';
+import { useAuth } from '../../context/LedgerContext';
 import { translations } from '../../i18n/translations';
+import { Search, Bell } from 'lucide-react';
 
-interface HeaderProps {
-  onSearch?: (term: string) => void;
-  searchTerm?: string;
-}
-
-const Header: React.FC<HeaderProps> = ({ onSearch, searchTerm = '' }) => {
-  const { language, activeTab, profile, setActiveTab } = useLedger();
-  const t = translations[language] || translations['en'] || {};
-
-  const titles: Record<string, string> = {
-    'general-table': 'General Table',
-    'money-flow': t.moneyFlow,
-    'bills': t.bills,
-    'tax': t.tax,
-    'contact': t.contact,
-    'activity-management': 'Activity Management',
-    'payroll-management': 'Payroll Management',
-    'inventory': 'Inventory',
-    'activity-creation': 'Project Creativity',
-    'chat': 'Chat & Communication'
-  };
+const Header = () => {
+  const { language, setGlobalSearch, globalSearch } = useUIStore();
+  const { profile } = useAuth();
+  const t = translations[language];
 
   return (
-    <header style={{ 
-      display: 'flex', 
-      justifyContent: 'space-between', 
-      alignItems: 'center', 
-      marginBottom: '10px', // Reduced from 20px
-      padding: '5px 10px',  // Tightened padding
-      background: 'transparent', // Removed background to let content "float" higher
-    }}>
-      {/* ... rest of the code stays the same ... */}
+    <header className="flex justify-between items-center mb-2">
       <div>
-        <div style={{ fontSize: '10px', fontWeight: 800, color: '#94A3B8', letterSpacing: '1px', textTransform: 'uppercase' }}>
-          {profile?.name || 'ABYSSINIA CYBERSEC PLC'}
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 900, color: '#1E293B', letterSpacing: '-0.5px' }}>
-            {titles[activeTab] || 'Dashboard'}
-          </h1>
-        </div>
+        <h2 className="text-xs font-black text-slate-400 tracking-widest uppercase mb-1">
+          {profile.name}
+        </h2>
+        <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+          Dashboard
+        </h1>
       </div>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-
-        <button onClick={() => setActiveTab('general-table')} className="hover:bg-slate-800 hover:scale-105 hover:shadow-lg transition-all duration-200" style={{
-          background: '#1E293B', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '12px',
-          fontWeight: 700, fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-          boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-        }}>
-          <MenuIcon size={18} />
-          {t.cmdPanel}
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder={t.search || "Search..."}
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none w-64 transition-all"
+          />
+        </div>
+        <button className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 relative">
+          <Bell size={20} />
+          <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </button>
       </div>
     </header>

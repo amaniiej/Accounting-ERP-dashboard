@@ -1,21 +1,34 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    host: true,
-    port: 5173,
-    open: true
-  },
-  optimizeDeps: {
-    // Cette section force Vite à pré-bundler "react-is" 
-    // pour éviter l'erreur de résolution rencontrée par Recharts
-    include: ['react-is'],
-  },
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      manifest: {
+        name: 'AgroSpace ERP',
+        short_name: 'ERP',
+        description: 'Ethiopian Financial ERP System',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          }
+        ]
+      }
+    })
+  ],
   resolve: {
-    // Optionnel : aide à la résolution des modules CommonJS si nécessaire
     mainFields: ['module', 'jsnext:main', 'js', 'main'],
   }
-})
+});

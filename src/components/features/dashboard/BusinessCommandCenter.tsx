@@ -1,29 +1,22 @@
 // src/components/features/dashboard/BusinessCommandCenter.tsx
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useLedger } from '../../../context/LedgerContext';
+import { useAuth } from '../../../context/LedgerContext';
+import { useTransactions } from '../../../hooks/useFinancials';
+import { Transaction, CompanyProfile, DocFile } from '../../../types';
 import {
   BarChart as BarChartIcon, ShieldCheck, Lock, Upload, FileText,
-  TrendingUp, Activity, CreditCard, MapPin, X, Edit, Save, Printer,
+  TrendingUp, Activity, MapPin, X, Edit, Save, Printer,
   Camera, Image as ImageIcon, CheckCircle, Trash2, Download, File as FileIcon,
-  Calendar as CalendarIcon, Server, AlertTriangle, Maximize2, TrendingDown
+  TrendingDown
 } from 'lucide-react';
 import {
-  BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine
+  BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import TasksWidget from './TasksWidget';
-// --- Interfaces ---
 
-interface CompanyProfile {
-  name: string;
-  address?: string;
-  tin?: string;
-  logo?: string;
-  fy?: string;
-  q?: string;
-  env?: string;
-}
+// --- Local Interfaces ---
 
 interface Task {
   id: string;
@@ -40,23 +33,7 @@ interface FinancialData {
   fullDate?: string;
 }
 
-interface Transaction {
-  id: string;
-  type: 'INCOME' | 'EXPENSE';
-  amount: number;
-  date: any;
-  item: string;
-  category: string;
-}
-
-interface Document {
-  name: string;
-  url: string;
-  type: string;
-  date: string;
-}
-
-// --- Components ---
+// --- Sub-Components ---
 
 const GrainyTexture = () => (
   <svg className="absolute inset-0 w-full h-full opacity-[0.15] pointer-events-none mix-blend-overlay">
@@ -67,7 +44,6 @@ const GrainyTexture = () => (
   </svg>
 );
 
-// Effet Shiny Liquid Glass overlay
 const LiquidShine = () => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[inherit]">
     <div className="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-50 rotate-12 transform origin-center" />
@@ -75,17 +51,17 @@ const LiquidShine = () => (
   </div>
 );
 
-const ProfileEditModal: React.FC<{ profile: CompanyProfile | null; setProfile: (p: CompanyProfile) => void; onClose: () => void; }> = ({ profile, setProfile, onClose }) => {
-  const [formData, setFormData] = useState<CompanyProfile | null>(profile || { name: 'General Table' });
+const ProfileEditModal: React.FC<{ profile: CompanyProfile | null; setProfile: React.Dispatch<React.SetStateAction<CompanyProfile>>; onClose: () => void; }> = ({ profile, setProfile, onClose }) => {
+  const [formData, setFormData] = useState<CompanyProfile | null>(profile);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev: CompanyProfile | null) => prev ? { ...prev, [e.target.name]: e.target.value } : null);
+    setFormData((prev) => prev ? { ...prev, [e.target.name]: e.target.value } : null);
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const url = URL.createObjectURL(e.target.files[0]);
-      setFormData((prev: CompanyProfile | null) => prev ? { ...prev, logo: url } : null);
+      setFormData((prev) => prev ? { ...prev, logo: url } : null);
     }
   };
 
@@ -122,14 +98,9 @@ const ProfileEditModal: React.FC<{ profile: CompanyProfile | null; setProfile: (
                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
               </label>
             </div>
-            <input name="name" value={formData.name || 'General Table'} onChange={handleChange} placeholder="Company Name" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
+            <input name="name" value={formData.name || ''} onChange={handleChange} placeholder="Company Name" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
             <input name="address" value={formData.address || ''} onChange={handleChange} placeholder="Address" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
             <input name="tin" value={formData.tin || ''} onChange={handleChange} placeholder="TIN" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
-            <div className="grid grid-cols-3 gap-4">
-              <input name="fy" value={formData.fy || ''} onChange={handleChange} placeholder="Fiscal Year (e.g., FY 2026)" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
-              <input name="q" value={formData.q || ''} onChange={handleChange} placeholder="Quarter (e.g., Q1)" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
-              <input name="env" value={formData.env || ''} onChange={handleChange} placeholder="Environment (e.g., Secure)" className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50" />
-            </div>
           </div>
           <div className="mt-8 flex justify-end gap-3">
             <button onClick={onClose} className="px-6 py-2 bg-white/60 backdrop-blur-sm border border-white/60 text-slate-700 font-semibold rounded-lg hover:bg-white/80 transition-colors">Cancel</button>
@@ -208,7 +179,7 @@ const ReportModal: React.FC<{ onClose: () => void; transactions: Transaction[] }
         switch (period) {
             case 'day':
                 const today = now.toISOString().split('T')[0];
-                data = transactions.filter(tx => tx.date === today);
+                data = transactions.filter(tx => new Date(tx.date).toISOString().split('T')[0] === today);
                 break;
             case 'week':
                 const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
@@ -291,9 +262,9 @@ const ReportModal: React.FC<{ onClose: () => void; transactions: Transaction[] }
                           <tbody className="divide-y divide-white/40">
                               {filteredData.transactions.map(tx => (
                                   <tr key={tx.id} className="hover:bg-white/30 transition-colors">
-                                      <td className="p-4 font-mono text-slate-500 font-medium">{tx.date}</td>
-                                      <td className="p-4 font-bold text-slate-800">{tx.item}</td>
-                                      <td className="p-4 text-slate-500"><span className="px-2 py-1 bg-white/60 backdrop-blur-sm rounded-md text-xs font-bold border border-white/40">{tx.category}</span></td>
+                                      <td className="p-4 font-mono text-slate-500 font-medium">{new Date(tx.date).toLocaleDateString()}</td>
+                                      <td className="p-4 font-bold text-slate-800">{tx.item_name || tx.motif}</td>
+                                      <td className="p-4 text-slate-500"><span className="px-2 py-1 bg-white/60 backdrop-blur-sm rounded-md text-xs font-bold border border-white/40">{tx.category || 'General'}</span></td>
                                       <td className={`p-4 text-right font-mono font-bold ${tx.amount < 0 ? 'text-red-500' : 'text-blue-600'}`}>
                                           {tx.amount.toLocaleString()} ETB
                                       </td>
@@ -315,17 +286,25 @@ const ReportModal: React.FC<{ onClose: () => void; transactions: Transaction[] }
 };
 
 const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTerm = '' }) => {
-  const { transactions, profile, setProfile, docs, setDocs } = useLedger();
+  // --- STATE & HOOKS ---
+  const { profile, setProfile } = useAuth();
+  const { data: transactionsData } = useTransactions();
+  const transactions = transactionsData || [];
   
-  // --- State Management ---
+  // Local state for documents
+  const [docs, setDocs] = useState<DocFile[]>([]);
+  
   const [chartTimeRange, setChartTimeRange] = useState<'week' | 'month' | 'year' | 'custom'>('week');
   const [isClient, setIsClient] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [isVaultUnlocked, setIsVaultUnlocked] = useState(true);
   const [pinInput, setPinInput] = useState('');
   const [vaultError, setVaultError] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<string | null>(null);
-  
+
+  // --- MODAL STATES ---
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
+
   // Hydration Mismatch Prevention
   useEffect(() => {
     setIsClient(true);
@@ -333,9 +312,9 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
 
   // Filter transactions based on global search
   const filteredTransactions = useMemo(() => {
-    if (!searchTerm) return transactions || [];
-    return (transactions || []).filter((t: any) => 
-      t.item?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    if (!searchTerm) return transactions;
+    return transactions.filter((t) => 
+      t.motif?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.amount?.toString().includes(searchTerm)
     );
@@ -346,10 +325,10 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     let income = 0;
     let expense = 0;
 
-    filteredTransactions.forEach((t: any) => {
+    filteredTransactions.forEach((t) => {
       const amount = Math.abs(Number(t.amount || 0));
-      const vatApplicable = t.vatApplicable !== undefined ? t.vatApplicable : true;
-      const amountWithVat = amount + (vatApplicable ? amount * 0.15 : 0);
+      // Assuming vatApplicable logic, default false for simple sum, adjust as needed
+      const amountWithVat = amount; // + (t.vatApplicable ? amount * 0.15 : 0);
 
       if (t.type === 'INCOME') income += amountWithVat;
       else if (t.type === 'EXPENSE') expense += amountWithVat;
@@ -367,20 +346,19 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
     
-    const calculateRevenue = (txs: any[]) => {
-      return txs.reduce((sum: number, t: any) => {
+    const calculateRevenue = (txs: Transaction[]) => {
+      return txs.reduce((sum, t) => {
          const amount = Math.abs(Number(t.amount || 0));
-         const vatApplicable = t.vatApplicable !== undefined ? t.vatApplicable : true;
-         return sum + amount + (vatApplicable ? amount * 0.15 : 0);
+         return sum + amount; 
       }, 0);
     };
 
-    const currentMonthExpense = calculateRevenue(filteredTransactions.filter((t: any) => {
+    const currentMonthExpense = calculateRevenue(filteredTransactions.filter((t) => {
         const d = new Date(t.date);
         return d.getMonth() === currentMonth && d.getFullYear() === currentYear && t.type === 'EXPENSE';
     }));
       
-    const lastMonthExpense = calculateRevenue(filteredTransactions.filter((t: any) => {
+    const lastMonthExpense = calculateRevenue(filteredTransactions.filter((t) => {
         const d = new Date(t.date);
         return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && t.type === 'EXPENSE';
     }));
@@ -388,37 +366,33 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     if (lastMonthExpense === 0) return { percent: 0, isPositive: true, current: currentMonthExpense, previous: lastMonthExpense };
     const percent = ((currentMonthExpense - lastMonthExpense) / lastMonthExpense) * 100;
     return { 
-      percent: Math.abs(percent).toFixed(1), 
+      percent: Math.abs(Number(percent.toFixed(1))), 
       isPositive: percent <= 0, // Positive if expenses decreased
       current: currentMonthExpense,
       previous: lastMonthExpense
     };
   }, [filteredTransactions]);
 
-  // --- Enhanced Chart Data with Date Formatting ---
+  // --- Chart Data with Date Formatting ---
   const chartData = useMemo(() => {
     const dataMap = new Map<string, { name: string; income: number; expense: number; date: Date }>();
-    const now = new Date();
 
-    filteredTransactions.forEach((tx: any) => {
+    filteredTransactions.forEach((tx) => {
       const date = new Date(tx.date);
       let key = '';
       let displayName = '';
 
       if (chartTimeRange === 'week') {
-        // Group by day name for current week
         const dayName = date.toLocaleString('en-us', { weekday: 'short' });
         const dayNum = date.getDate();
         key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
         displayName = `${dayName} ${dayNum}`;
         if (!dataMap.has(key)) dataMap.set(key, { name: displayName, income: 0, expense: 0, date });
       } else if (chartTimeRange === 'month') {
-        // Group by day of month
         key = `${date.getDate()}`;
         displayName = `${date.getDate()}`;
         if (!dataMap.has(key)) dataMap.set(key, { name: displayName, income: 0, expense: 0, date });
       } else if (chartTimeRange === 'year') {
-        // Group by month
         const monthName = date.toLocaleString('en-us', { month: 'short' });
         key = `${date.getMonth()}`;
         displayName = monthName;
@@ -428,18 +402,15 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
       if (key && dataMap.has(key)) {
         const entry = dataMap.get(key)!;
         const amount = Math.abs(Number(tx.amount || 0));
-        const vatApplicable = tx.vatApplicable !== undefined ? tx.vatApplicable : true;
-        const amountWithVat = amount + (vatApplicable ? amount * 0.15 : 0);
-
+        
         if (tx.type === 'INCOME') {
-          entry.income += amountWithVat;
+          entry.income += amount;
         } else {
-          entry.expense += amountWithVat;
+          entry.expense += amount;
         }
       }
     });
 
-    // Sort data based on time range
     let sortedData = Array.from(dataMap.values());
     if (chartTimeRange === 'year') {
       const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -451,9 +422,14 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     return sortedData;
   }, [chartTimeRange, filteredTransactions]);
 
-  const handleVaultLogin = () => {
-    setIsVaultUnlocked(true);
-    setVaultError(null);
+  const handleVaultLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pinInput === '1234') { // Mock PIN
+      setIsVaultUnlocked(true);
+      setVaultError(null);
+    } else {
+      setVaultError('Invalid PIN');
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement> | any) => {
@@ -461,20 +437,20 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     if (files) {
       Array.from(files).forEach((file: any) => {
         const url = URL.createObjectURL(file);
-        const newDoc: Document = {
+        const newDoc: DocFile = {
           name: file.name,
           url: url,
           type: file.type,
           date: new Date().toLocaleDateString()
         };
-        setDocs((prev: Document[]) => [...prev, newDoc]);
+        setDocs((prev) => [...prev, newDoc]);
       });
     }
   };
 
   const handleDocDelete = (docUrl: string) => {
     if (window.confirm("Are you sure you want to delete this document?")) {
-      setDocs((prev: Document[]) => prev.filter(d => d.url !== docUrl));
+      setDocs((prev) => prev.filter(d => d.url !== docUrl));
     }
   };
   
@@ -482,34 +458,34 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     window.print();
   };
 
-  // --- Calendar Logic ---
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: '1', day: 'Mon', name: 'VAT Filing', mission: 'Submit monthly report', completed: false },
-    { id: '2', day: 'Tue', name: 'Payroll', mission: 'Review salaries', completed: true },
-    { id: '3', day: 'Wed', name: 'Audit', mission: 'Internal check', completed: false },
-    { id: '4', day: 'Thu', name: 'Client Meet', mission: 'Project Alpha', completed: false },
-    { id: '5', day: 'Fri', name: 'Backup', mission: 'Server maintenance', completed: false },
-    { id: '6', day: 'Sat', name: 'Review', mission: 'Weekly summary', completed: false },
-    { id: '7', day: 'Sun', name: 'Off', mission: 'Rest day', completed: true },
-  ]);
-
-  const toggleTask = (id: string) => {
-    setTasks((prev: Task[]) => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-  };
-
-  // --- Profile Logic ---
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const url = URL.createObjectURL(e.target.files[0]);
-      setProfile((prev) => prev ? { ...prev, logo: url } : { name: '', address: '', tin: '' });
+      setProfile((prev) => ({ 
+        ...prev, 
+        name: prev.name || 'New Company', 
+        logo: url 
+      }));
     }
   };
 
-  // --- Modal States ---
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
-
-  if (!isClient) return null;
+  const getDateLabel = () => {
+    const now = new Date();
+    switch (chartTimeRange) {
+      case 'week':
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        return `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('en-us', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('en-us', { month: 'short' })} ${endOfWeek.getFullYear()}`;
+      case 'month':
+        return now.toLocaleString('en-us', { month: 'long', year: 'numeric' });
+      case 'year':
+        return now.getFullYear().toString();
+      default:
+        return now.toLocaleString('en-us', { month: 'long', year: 'numeric' });
+    }
+  };
 
   // Custom Tooltip for Chart
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -529,36 +505,19 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
     return null;
   };
 
-  // Get current date information for labels
-  const getDateLabel = () => {
-    const now = new Date();
-    switch (chartTimeRange) {
-      case 'week':
-        const startOfWeek = new Date(now);
-        startOfWeek.setDate(now.getDate() - now.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        return `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('en-us', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('en-us', { month: 'short' })} ${endOfWeek.getFullYear()}`;
-      case 'month':
-        return now.toLocaleString('en-us', { month: 'long', year: 'numeric' });
-      case 'year':
-        return now.getFullYear().toString();
-      default:
-        return now.toLocaleString('en-us', { month: 'long', year: 'numeric' });
-    }
-  };
+  if (!isClient) return null;
 
   return (
     <div className="flex flex-col min-h-screen bg-white font-sans text-slate-900 overflow-x-hidden relative" style={{ fontFamily: "'Satoshi', sans-serif" }}>
       <GrainyTexture />
       
       <AnimatePresence>
-        {isProfileModalOpen && <ProfileEditModal profile={profile} setProfile={(p) => setProfile(p)} onClose={() => setIsProfileModalOpen(false)} />}
+        {isProfileModalOpen && <ProfileEditModal profile={profile} setProfile={setProfile} onClose={() => setIsProfileModalOpen(false)} />}
         {isCameraScannerOpen && <CameraScanner onClose={() => setIsCameraScannerOpen(false)} onCapture={(file) => {
           handleFileUpload({ target: { files: [file] } } as any);
           setIsCameraScannerOpen(false);
         }} />}
-        {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} transactions={filteredTransactions as any[]} />}
+        {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} transactions={filteredTransactions} />}
       </AnimatePresence>
 
       {/* --- 1. HEADER --- */}
@@ -586,7 +545,7 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
                       <MapPin size={14}/> {profile?.address || 'Addis Ababa, Bole Sub-city, Woreda 03'}
                    </div>
                    <div className="flex items-center gap-2 text-slate-500 font-bold text-xs bg-white/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/60">
-                      <CreditCard size={14}/> {profile?.tin || '0045992188'}
+                      <Activity size={14}/> {profile?.tin || '0045992188'}
                    </div>
                 </div>
              </div>
@@ -683,7 +642,6 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
                     />
                     <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(59, 130, 246, 0.05)'}} />
                     
-                    {/* Vertical separators for time periods */}
                     {chartData.map((entry, index) => (
                       index < chartData.length - 1 && (
                         <ReferenceLine 
@@ -716,35 +674,10 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
                 </ResponsiveContainer>
               </div>
               
-              {/* X-AXIS LABELS DISPLAY */}
               <div className="flex justify-between items-center px-12 mt-2 text-xs font-bold text-slate-400 uppercase tracking-widest print:hidden">
-                {chartTimeRange === 'week' && (
-                  <>
-                    <span className="bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">Mon Tue Wed Thu Fri Sat Sun</span>
-                    <span className="text-slate-300">|</span>
-                    <span className="font-mono text-slate-500 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">
-                      {getDateLabel()}
-                    </span>
-                  </>
-                )}
-                {chartTimeRange === 'month' && (
-                  <>
-                    <span className="bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31</span>
-                    <span className="text-slate-300">|</span>
-                    <span className="font-mono text-slate-500 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">
-                      {getDateLabel()}
-                    </span>
-                  </>
-                )}
-                {chartTimeRange === 'year' && (
-                  <>
-                    <span className="bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec</span>
-                    <span className="text-slate-300">|</span>
-                    <span className="font-mono text-slate-500 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">
-                      {getDateLabel()}
-                    </span>
-                  </>
-                )}
+                <span className="font-mono text-slate-500 bg-white/60 backdrop-blur-sm px-3 py-1 rounded-full border border-white/40">
+                  {getDateLabel()}
+                </span>
               </div>
               
               <div className="flex justify-end gap-2 mt-6 print:hidden relative z-10">
@@ -805,7 +738,7 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
                               <p className="text-sm font-semibold">No documents yet.</p>
                               <p className="text-xs opacity-70">Upload Business License, TIN Certificate, etc.</p>
                             </div>
-                          ) : docs.map((doc: any, idx: number) => (
+                          ) : docs.map((doc, idx) => (
                             <motion.div 
                               key={idx} 
                               layout 
@@ -865,14 +798,14 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.slice(0, 5).map((tx: any, index: number) => {
+                    {transactions.slice(0, 5).map((tx, index) => {
                       const amount = Math.abs(Number(tx.amount || 0));
                       const isIncome = tx.type === 'INCOME';
-                      const dateStr = typeof tx.date === 'string' ? tx.date : new Date(tx.date).toISOString().split('T')[0];
+                      const dateStr = typeof tx.date === 'string' ? tx.date : new Date(tx.date).toLocaleDateString();
                       return (
                         <tr key={tx.id || index} className={`border-t border-slate-100 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                           <td className="px-4 py-3 font-mono text-slate-600">{dateStr}</td>
-                          <td className="px-4 py-3 font-medium text-slate-800">{tx.item || tx.motif || 'Transaction'}</td>
+                          <td className="px-4 py-3 font-medium text-slate-800">{tx.item_name || tx.motif || 'Transaction'}</td>
                           <td className="px-4 py-3 text-slate-500">{tx.category || 'General'}</td>
                           <td className={`px-4 py-3 text-right font-mono font-bold ${isIncome ? 'text-emerald-600' : 'text-red-600'}`}>
                             {isIncome ? '+' : '-'}{amount.toLocaleString()} ETB
@@ -902,22 +835,6 @@ const BusinessCommandCenter: React.FC<BusinessCommandCenterProps> = ({ searchTer
 
         </div>
       </div>
-      
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, 0.3);
-          border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(148, 163, 184, 0.5);
-        }
-      `}</style>
     </div>
   );
 };
