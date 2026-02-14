@@ -33,3 +33,22 @@ export interface DocFile {
   type: string;
   date: string;
 }
+
+// src/types/index.ts
+
+export type Lang = 'en' | 'am' | 'om' | 'ti' | 'so';
+
+export interface Transaction {
+  id: string;
+  date: Date;
+  source: 'Telebirr' | 'CBE' | 'Cash';
+  item_name?: string; 
+  motif: string;     
+  category: string; // <--- ADD THIS LINE
+  amount: number;
+  type: 'INCOME' | 'EXPENSE';
+  receipt_hash?: string;
+  has_file: boolean;
+  file_type?: 'PDF' | 'JPG';
+  vatApplicable?: boolean;
+}

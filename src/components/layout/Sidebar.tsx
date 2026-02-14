@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { LayoutGrid, ArrowRightLeft, Boxes, Landmark, FileText, DollarSign, Activity } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 import { motion } from 'framer-motion';
+import { Lock } from 'lucide-react'; // Import Lock icon
 
 const Sidebar = () => {
   const { isSidebarOpen, toggleSidebar } = useUIStore();
@@ -13,6 +14,7 @@ const Sidebar = () => {
     { path: '/activity', title: 'Activity', icon: Activity },
     { path: '/payroll', title: 'Payroll', icon: DollarSign },
     { path: '/inventory', title: 'Inventory', icon: Boxes },
+    { path: '/vault', title: 'Secure Vault', icon: Lock },
     { path: '/tax', title: 'Tax Tracker', icon: Landmark },
     { path: '/reports', title: 'Reports', icon: FileText },
   ];

@@ -9,9 +9,13 @@ export const usePOS = () => {
   const [type, setType] = useState<'INCOME' | 'EXPENSE'>('INCOME');
 
   const handleDigit = (digit: string) => {
-    if (digit === 'C') setAmount('');
-    else if (digit === 'BACK') setAmount(prev => prev.slice(0, -1));
-    else setAmount(prev => prev + digit);
+    if (digit === 'C') {
+      setAmount('');
+    } else if (digit === '.') {
+      if (!amount.includes('.')) setAmount(prev => prev + digit);
+    } else {
+      setAmount(prev => prev + digit);
+    }
   };
 
   const submitTransaction = () => {
@@ -22,6 +26,7 @@ export const usePOS = () => {
       date: new Date(),
       amount: Number(amount),
       motif: motif || (type === 'INCOME' ? 'Quick Sale' : 'Expense'),
+      category: type === 'INCOME' ? 'Sales' : 'General',
       type,
       source: 'Cash',
       has_file: false
@@ -33,8 +38,12 @@ export const usePOS = () => {
   };
 
   return {
-    amount, motif, type,
-    setMotif, setType,
-    handleDigit, submitTransaction
+    amount, 
+    motif, 
+    type,
+    setMotif, 
+    setType,
+    handleDigit, 
+    submitTransaction
   };
 };

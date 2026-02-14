@@ -13,6 +13,7 @@ const TaxTracker = lazy(() => import('./components/features/tax/TaxTracker'));
 const Reports = lazy(() => import('./components/features/report/FinalReport'));
 const SalaryPayroll = lazy(() => import('./components/features/Salary/salarypayroll'));
 const ActivityManagement = lazy(() => import('./components/features/Activity/activitymanagement'));
+const VaultMain = lazy(() => import('./components/features/vault/VaultMain')); // Lazy import
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen bg-slate-50">
@@ -35,6 +36,7 @@ const App = () => {
           isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage onLogin={login} onBackToMarketing={() => setShowLanding(true)} />
         } />
 
+        <Route path="vault" element={<VaultMain />} />
         <Route path="/" element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<BusinessCommandCenter />} />

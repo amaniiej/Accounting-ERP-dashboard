@@ -1,5 +1,5 @@
 import React from 'react';
-import { Delete, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface Props {
   amount: string;
@@ -7,7 +7,7 @@ interface Props {
   onSubmit: () => void;
 }
 
-export const POSKeypad: React.FC<Props> = ({ amount, onDigit, onSubmit }) => {
+const POSKeypad: React.FC<Props> = ({ amount, onDigit, onSubmit }) => {
   const keys = ['1','2','3','4','5','6','7','8','9','C','0','.'];
 
   return (
@@ -24,7 +24,9 @@ export const POSKeypad: React.FC<Props> = ({ amount, onDigit, onSubmit }) => {
           <button
             key={k}
             onClick={() => onDigit(k)}
-            className={`p-4 text-xl font-bold rounded-2xl transition-all active:scale-95 ${k === 'C' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-md'}`}
+            className={`p-4 text-xl font-bold rounded-2xl transition-all active:scale-95 ${
+              k === 'C' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-md'
+            }`}
           >
             {k}
           </button>
@@ -40,3 +42,5 @@ export const POSKeypad: React.FC<Props> = ({ amount, onDigit, onSubmit }) => {
     </div>
   );
 };
+
+export default POSKeypad; // <--- MAKE SURE THIS LINE IS HERE
